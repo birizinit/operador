@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Montserrat', sans-serif; }
+body {
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+.container {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding:40px 30px;
+    width: 100%;
+    max-width: 500px;
+    text-align:center;
+    box-shadow:0 8px 30px rgba(0,0,0,0.5);
+}
+h2 { margin-bottom: 20px; }
+ul { list-style:none; padding:0; margin-top:20px; text-align:left; }
+ul li { margin-bottom:10px; font-weight:500; }
+.total { margin-top:20px; font-weight:bold; }
+.btn-logout {
+    margin-top:30px;
+    padding:10px 20px;
+    background:#fff;
+    color:#000;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
+}
+.btn-logout:hover {
+    background:#ddd;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>Bem-vindo!</h2>
+    <ul id="wallets-list"></ul>
+    <p class="total" id="total-balance"></p>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+</div>
+
+<script>
+// Carrega os dados do localStorage
+window.onload = function() {
+    const walletsData = JSON.parse(localStorage.getItem('walletsData'));
+    if (!walletsData) {
+        alert('Token não encontrado. Faça login novamente.');
+        window.location.href = 'index.html';
+        return;
+    }
+
+    const list = document.getElementById('wallets-list');
+    let total = 0;
+
+    walletsData.forEach(wallet => {
+        const li = document.createElement('li');
+        li.textContent = `${wallet.name}: ${wallet.balance}`;
+        list.appendChild(li);
+        total += Number(wallet.balance);
+    });
+
+    document.getElementById('total-balance').textContent = `Saldo total: ${total}`;
+}
+
+// Logout
+function logout() {
+    localStorage.removeItem('apiToken');
+    localStorage.removeItem('walletsData');
+    window.location.href = 'index.html';
+}
+</script>
+</body>
+</html>
