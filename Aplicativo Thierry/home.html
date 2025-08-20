@@ -62,7 +62,7 @@
     }
     .controls { display: flex; align-items: center; gap: 8px; }
 
-    .select, .btn, .balance {
+    .select, .btn, .balance, .user-chip {
       min-height: var(--tap);
       display: inline-flex; align-items: center; justify-content: center;
       border-radius: 12px;
@@ -84,6 +84,10 @@
     .btn.ghost:hover { background: rgba(124, 58, 237, 0.12); }
     .balance { font-weight: 700; white-space: nowrap; }
 
+    .user-chip { gap: 8px; padding-right: 10px; }
+    .avatar { width: 24px; height: 24px; border-radius: 999px; background: #1b1b21; display:flex; align-items:center; justify-content:center; font-weight:700; font-size: 12px; }
+    .user-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+
     /* Main */
     .main {
       padding: calc(64px + env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 24px);
@@ -100,6 +104,15 @@
       padding: 16px;
     }
     .panel-title { font-weight: 700; margin-bottom: 10px; font-size: 16px; }
+
+    /* Summary */
+    .summary-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .stat { display:flex; align-items:center; justify-content: space-between; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #111116; }
+    .stat .label { color: var(--muted); font-size: 12px; }
+    .stat .value { font-weight: 700; font-size: 18px; }
+    .pill { padding: 4px 8px; border-radius: 999px; border: 1px solid var(--border); font-size: 12px; }
+    .pill.win { color: var(--green); border-color: rgba(16,185,129,.5); }
+    .pill.loss { color: var(--red); border-color: rgba(239,68,68,.5); }
 
     /* Trade panel */
     .pair { display:flex; align-items:center; gap:10px; margin-bottom: 12px; }
@@ -132,12 +145,16 @@
 
     /* Skeleton */
     .skeleton { position: relative; overflow: hidden; background: #15151a; }
-    .skeleton::after {
-      content: ""; position: absolute; inset: 0; transform: translateX(-100%);
-      background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.06), rgba(255,255,255,0));
-      animation: shimmer 1.2s infinite;
-    }
+    .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.06), rgba(255,255,255,0)); animation: shimmer 1.2s infinite; }
     @keyframes shimmer { to { transform: translateX(100%); } }
+
+    /* Onboarding */
+    .onboarding { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; padding: 24px; z-index: 1200; }
+    .onboarding .box { max-width: 520px; width: 100%; border-radius: 16px; border: 1px solid var(--purple); background: var(--bg-elev); padding: 20px; }
+    .onboarding h3 { margin: 0 0 8px 0; font-size: 18px; }
+    .onboarding p { color: var(--muted); font-size: 14px; margin: 0 0 8px 0; }
+    .onboarding ul { margin: 8px 0 12px 16px; padding: 0; }
+    .onboarding li { margin-bottom: 6px; }
 
     /* Toast */
     .toast { position: fixed; right: 16px; bottom: 16px; background: var(--bg-elev); border: 1px solid var(--purple); color: var(--text); padding: 12px 14px; border-radius: 10px; opacity: 0; transform: translateY(8px); transition: all .2s ease; z-index: 1100; }
@@ -146,6 +163,8 @@
     /* Desktop */
     @media (min-width: 900px) {
       .main { grid-template-columns: 1fr 1.4fr; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .user-name { max-width: 200px; }
     }
   </style>
 </head>
@@ -161,11 +180,35 @@
         <div id="balance" class="balance">R$ 0,00</div>
         <a class="btn ghost" href="https://app.asafebroker.com/finance/deposit" target="_blank" rel="noopener noreferrer">Depósito</a>
         <a class="btn ghost" href="https://app.asafebroker.com/finance/withdrawl" target="_blank" rel="noopener noreferrer">Saque</a>
+        <div id="user-chip" class="user-chip" aria-label="Usuário" title="Usuário">
+          <div class="avatar" id="user-avatar">U</div>
+          <div class="user-name" id="user-name">Usuário</div>
+        </div>
       </div>
     </div>
   </header>
 
   <main class="main">
+    <section class="panel" id="summary-panel">
+      <div class="panel-title">Resumo</div>
+      <div class="summary-grid">
+        <div class="stat" id="pl-today">
+          <div>
+            <div class="label">P/L Hoje</div>
+            <div class="value" id="pl-value">R$ 0,00</div>
+          </div>
+          <div class="pill" id="pl-pill">0 operações</div>
+        </div>
+        <div class="stat" id="last-trade">
+          <div>
+            <div class="label">Última ordem</div>
+            <div class="value" id="last-value">—</div>
+          </div>
+          <div class="pill" id="last-pill">—</div>
+        </div>
+      </div>
+    </section>
+
     <section class="panel" id="trade-panel">
       <div class="panel-title">Abrir ordem</div>
       <div class="pair"><span class="btc-icon">₿</span> <strong>BTCUSDT</strong></div>
@@ -216,6 +259,19 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <div id="onboarding" class="onboarding" role="dialog" aria-modal="true" aria-labelledby="onb-title" aria-describedby="onb-desc">
+    <div class="box">
+      <h3 id="onb-title">Bem-vindo ao Binary MVP</h3>
+      <p id="onb-desc">Algumas dicas rápidas para começar:</p>
+      <ul>
+        <li>Selecione sua carteira (REAL, DEMO, BONUS) no topo para ver o saldo.</li>
+        <li>Escolha a direção (BUY/SELL), o tempo (01:00, 05:00, 15:00) e o valor.</li>
+        <li>Toque em “Enviar ordem”. Veja as ordens no histórico.</li>
+      </ul>
+      <button id="onb-close" class="btn primary" style="width:100%;">Começar</button>
+    </div>
+  </div>
+
   <script>
     const API_BASE = 'https://broker-api.mybroker.dev';
     const CURRENCY = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -223,12 +279,21 @@
     const els = {
       walletSelect: document.getElementById('wallet-select'),
       balance: document.getElementById('balance'),
+      userChip: document.getElementById('user-chip'),
+      userName: document.getElementById('user-name'),
+      userAvatar: document.getElementById('user-avatar'),
       openOrder: document.getElementById('open-order'),
       amount: document.getElementById('amount'),
       tradeError: document.getElementById('trade-error'),
       historyBody: document.getElementById('history-body'),
       refreshHistory: document.getElementById('refresh-history'),
       toast: document.getElementById('toast'),
+      plValue: document.getElementById('pl-value'),
+      plPill: document.getElementById('pl-pill'),
+      lastValue: document.getElementById('last-value'),
+      lastPill: document.getElementById('last-pill'),
+      onboarding: document.getElementById('onboarding'),
+      onboardingClose: document.getElementById('onb-close'),
     };
 
     let state = {
@@ -238,6 +303,7 @@
       selectedType: null,
       selectedDirection: 'BUY',
       selectedTime: '01:00',
+      user: null,
     };
 
     function toast(message) {
@@ -260,6 +326,26 @@
       els.balance.textContent = CURRENCY.format(amount);
     }
 
+    function initialsFrom(name = '') {
+      const parts = name.trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return 'U';
+      const first = parts[0][0] || '';
+      const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+      return (first + last).toUpperCase();
+    }
+
+    async function loadUser() {
+      try {
+        const me = await fetchJson('/token/users/me', { method: 'GET' });
+        state.user = me;
+        els.userName.textContent = me.name || me.email || 'Usuário';
+        els.userChip.title = me.email || me.name || 'Usuário';
+        els.userAvatar.textContent = initialsFrom(me.name || me.email || 'U');
+      } catch {
+        // opcional: manter valores padrão
+      }
+    }
+
     function bindChips() {
       document.querySelectorAll('#times .chip').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -268,8 +354,7 @@
           btn.classList.add('active');
         });
       });
-      const firstTime = document.querySelector('#times .chip');
-      if (firstTime) firstTime.click();
+      const firstTime = document.querySelector('#times .chip'); if (firstTime) firstTime.click();
 
       document.querySelectorAll('.amount-wrap .chip').forEach(btn => {
         btn.addEventListener('click', () => { els.amount.value = btn.dataset.amount; });
@@ -301,14 +386,52 @@
       }
     }
 
+    function isToday(date) {
+      const d = new Date(date);
+      const now = new Date();
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    }
+
+    function calculateDailyPL(trades) {
+      let pl = 0; let count = 0;
+      for (const t of trades) {
+        if (!t.createdAt || !isToday(t.createdAt)) continue;
+        if (t.status === 'WIN') { pl += Number(t.amount || 0); count++; }
+        else if (t.status === 'LOSS') { pl -= Number(t.amount || 0); count++; }
+      }
+      return { pl, count };
+    }
+
+    function updateSummary(trades) {
+      const { pl, count } = calculateDailyPL(trades || []);
+      els.plValue.textContent = CURRENCY.format(pl);
+      els.plPill.textContent = `${count} operação${count === 1 ? '' : 'es'}`;
+      els.plPill.classList.remove('win', 'loss');
+      if (pl > 0) els.plPill.classList.add('win'); else if (pl < 0) els.plPill.classList.add('loss');
+
+      if (trades && trades.length) {
+        const last = trades.slice().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+        els.lastValue.textContent = `${last.symbol || 'BTCUSDT'} • ${CURRENCY.format(Number(last.amount || 0))}`;
+        els.lastPill.textContent = `${last.status || ''}`;
+        els.lastPill.classList.remove('win', 'loss');
+        if ((last.status || '').toUpperCase() === 'WIN') els.lastPill.classList.add('win');
+        if ((last.status || '').toUpperCase() === 'LOSS') els.lastPill.classList.add('loss');
+      } else {
+        els.lastValue.textContent = '—';
+        els.lastPill.textContent = '—';
+        els.lastPill.classList.remove('win', 'loss');
+      }
+    }
+
     async function loadHistory() {
       try {
         els.refreshHistory.disabled = true; els.refreshHistory.textContent = 'Atualizando...';
         setHistoryLoading(true);
         const trades = await fetchJson('/token/trades', { method: 'GET' });
         renderHistory(trades);
+        updateSummary(trades);
       } catch (e) {
-        renderHistory([]); toast('Erro ao carregar histórico');
+        renderHistory([]); updateSummary([]); toast('Erro ao carregar histórico');
       } finally {
         els.refreshHistory.disabled = false; els.refreshHistory.textContent = 'Atualizar';
       }
@@ -346,12 +469,19 @@
       } catch (e) { els.tradeError.textContent = e.message || 'Erro ao abrir ordem.'; }
     }
 
+    function initOnboarding() {
+      const dismissed = localStorage.getItem('onboardingDismissed') === 'true';
+      if (!dismissed) { els.onboarding.style.display = 'flex'; }
+      els.onboardingClose.addEventListener('click', () => { localStorage.setItem('onboardingDismissed', 'true'); els.onboarding.style.display = 'none'; });
+      els.onboarding.addEventListener('click', (e) => { if (e.target === els.onboarding) { localStorage.setItem('onboardingDismissed', 'true'); els.onboarding.style.display = 'none'; } });
+    }
+
     async function init() {
       state.token = sessionStorage.getItem('apiToken');
       if (!state.token) { window.location.href = 'index.html'; return; }
-      try { await loadWallets(); await loadHistory(); }
+      try { await Promise.all([loadUser(), loadWallets(), loadHistory()]); }
       catch { toast('Falha ao inicializar. Faça login novamente.'); setTimeout(() => window.location.href = 'index.html', 1200); return; }
-      bindChips(); els.openOrder.addEventListener('click', openOrder); els.refreshHistory.addEventListener('click', loadHistory);
+      bindChips(); els.openOrder.addEventListener('click', openOrder); els.refreshHistory.addEventListener('click', loadHistory); initOnboarding();
     }
 
     init();
