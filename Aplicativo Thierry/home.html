@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
   <title>MVP Opções Binárias</title>
   <meta name="description" content="MVP de opções binárias: selecione carteira, visualize saldo, abra ordens e veja o histórico.">
   <meta name="theme-color" content="#000000">
@@ -21,6 +22,8 @@
       --green: #10b981;
       --red: #ef4444;
       --yellow: #f59e0b;
+      --radius: 14px;
+      --tap: 44px;
     }
     * { box-sizing:border-box; }
     html, body { height: 100%; }
@@ -38,52 +41,39 @@
     /* Header */
     .header {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       height: 64px;
       background: rgba(15, 15, 18, 0.9);
       border-bottom: 1px solid var(--purple);
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
+      display: flex; align-items: center;
+      padding: calc(env(safe-area-inset-top) + 6px) 16px 6px;
       z-index: 1000;
       backdrop-filter: blur(6px);
     }
     .header-inner {
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      width: 100%; max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
     }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 0.3px; }
     .brand-mark {
       width: 28px; height: 28px; border-radius: 8px;
       background: linear-gradient(135deg, var(--purple), #9b5cf0);
-      display:flex; align-items:center; justify-content:center;
-      color:#fff; font-weight:700;
+      display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700;
     }
-    .controls {
-      display: flex; align-items: center; gap: 10px;
-    }
+    .controls { display: flex; align-items: center; gap: 8px; }
+
     .select, .btn, .balance {
-      height: 36px;
+      min-height: var(--tap);
       display: inline-flex; align-items: center; justify-content: center;
-      border-radius: 10px;
+      border-radius: 12px;
       border: 1px solid var(--border);
-      background: transparent;
+      background:
+        linear-gradient(var(--bg-elev), var(--bg-elev)) padding-box,
+        linear-gradient(135deg, rgba(124,58,237,.6), rgba(155,92,240,.15)) border-box;
       color: var(--text);
       padding: 0 12px;
       font-weight: 600;
+      font-size: 14px;
     }
     .select { cursor: pointer; }
     .select:focus-visible, .btn:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
@@ -92,31 +82,30 @@
     .btn.primary:hover { background: var(--purple-600); }
     .btn.ghost { background: transparent; border-color: var(--purple); }
     .btn.ghost:hover { background: rgba(124, 58, 237, 0.12); }
-    .balance { border-color: var(--purple); font-weight: 700; }
+    .balance { font-weight: 700; white-space: nowrap; }
 
     /* Main */
     .main {
-      padding: 88px 16px 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
+      padding: calc(64px + env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 24px);
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr; gap: 16px;
     }
 
     .panel {
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: var(--bg-elev);
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(var(--bg-elev), var(--bg-elev)) padding-box,
+        linear-gradient(135deg, rgba(124,58,237,.4), rgba(155,92,240,.12)) border-box;
       padding: 16px;
     }
-    .panel-title { font-weight: 700; margin-bottom: 10px; }
+    .panel-title { font-weight: 700; margin-bottom: 10px; font-size: 16px; }
 
     /* Trade panel */
     .pair { display:flex; align-items:center; gap:10px; margin-bottom: 12px; }
     .btc-icon { width: 22px; height: 22px; border-radius: 50%; background: #f7931a; color:#000; font-weight: 700; display:flex; align-items:center; justify-content:center; }
     .row { display:flex; flex-wrap: wrap; align-items:center; gap: 8px; margin-top: 8px; }
-    .chip { height: 34px; padding: 0 12px; border:1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text); font-weight:600; cursor:pointer; }
+    .chip { min-height: var(--tap); padding: 0 14px; border:1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text); font-weight:600; cursor:pointer; }
     .chip:hover { border-color: var(--purple); }
     .chip.active { background: rgba(124,58,237,0.12); border-color: var(--purple); }
     .btn.buy { border-color: var(--green); color: var(--green); }
@@ -124,15 +113,16 @@
     .btn.sell { border-color: var(--red); color: var(--red); }
     .btn.sell:hover { background: rgba(239,68,68,0.12); }
 
-    .amount-wrap { display:flex; align-items:center; gap:8px; margin-top: 8px; }
-    .amount-input { height: 36px; width: 120px; border-radius: 10px; border:1px solid var(--border); background: transparent; color: var(--text); padding: 0 10px; font-weight: 600; }
+    .amount-wrap { display:flex; align-items:center; gap:8px; margin-top: 8px; flex-wrap: wrap; }
+    .amount-input { min-height: var(--tap); width: 140px; border-radius: 12px; border:1px solid var(--border); background: transparent; color: var(--text); padding: 0 12px; font-weight: 600; }
 
     .order-actions { display:flex; gap: 10px; margin-top: 12px; }
 
     /* History */
     .history-header { display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    .table-wrap { overflow-x:auto; border-radius: 10px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
     th { color: var(--muted); font-weight: 600; }
     .status { font-weight: 700; }
     .status.open { color: var(--yellow); }
@@ -140,10 +130,20 @@
     .status.loss { color: var(--red); }
     .status.cancelled { color: var(--muted); }
 
+    /* Skeleton */
+    .skeleton { position: relative; overflow: hidden; background: #15151a; }
+    .skeleton::after {
+      content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+      background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.06), rgba(255,255,255,0));
+      animation: shimmer 1.2s infinite;
+    }
+    @keyframes shimmer { to { transform: translateX(100%); } }
+
     /* Toast */
     .toast { position: fixed; right: 16px; bottom: 16px; background: var(--bg-elev); border: 1px solid var(--purple); color: var(--text); padding: 12px 14px; border-radius: 10px; opacity: 0; transform: translateY(8px); transition: all .2s ease; z-index: 1100; }
     .toast.show { opacity: 1; transform: translateY(0); }
 
+    /* Desktop */
     @media (min-width: 900px) {
       .main { grid-template-columns: 1fr 1.4fr; }
     }
@@ -185,7 +185,7 @@
         <button class="chip" data-amount="50">R$ 50</button>
       </div>
       <div class="order-actions">
-        <button id="open-order" class="btn primary">Enviar ordem</button>
+        <button id="open-order" class="btn primary" style="flex:1;">Enviar ordem</button>
       </div>
       <div id="trade-error" style="margin-top:8px;color:#ff6b6b;min-height:18px;"></div>
     </section>
@@ -195,7 +195,7 @@
         <div class="panel-title">Histórico de trades</div>
         <button id="refresh-history" class="btn">Atualizar</button>
       </div>
-      <div style="overflow-x:auto;">
+      <div class="table-wrap">
         <table>
           <thead>
             <tr>
@@ -207,7 +207,7 @@
             </tr>
           </thead>
           <tbody id="history-body">
-            <tr><td colspan="5" style="color:var(--muted);">Sem registros</td></tr>
+            <tr><td colspan="5" style="color:var(--muted);">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -246,19 +246,11 @@
       setTimeout(() => els.toast.classList.remove('show'), 2000);
     }
 
-    function getAuthHeaders() {
-      return { 'api-token': state.token };
-    }
+    function getAuthHeaders() { return { 'api-token': state.token }; }
 
     async function fetchJson(path, options = {}) {
-      const res = await fetch(`${API_BASE}${path}`, {
-        ...options,
-        headers: { ...getAuthHeaders(), ...(options.headers || {}) },
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(text || 'Erro na requisição');
-      }
+      const res = await fetch(`${API_BASE}${path}`, { ...options, headers: { ...getAuthHeaders(), ...(options.headers || {}) } });
+      if (!res.ok) { throw new Error((await res.text().catch(()=>'')).trim() || 'Erro na requisição'); }
       return res.json();
     }
 
@@ -276,55 +268,49 @@
           btn.classList.add('active');
         });
       });
-      // default active
       const firstTime = document.querySelector('#times .chip');
       if (firstTime) firstTime.click();
 
       document.querySelectorAll('.amount-wrap .chip').forEach(btn => {
-        btn.addEventListener('click', () => {
-          els.amount.value = btn.dataset.amount;
-        });
+        btn.addEventListener('click', () => { els.amount.value = btn.dataset.amount; });
       });
 
       document.querySelectorAll('#directions .btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          state.selectedDirection = btn.dataset.direction;
-          toast(`Direção: ${state.selectedDirection}`);
-        });
+        btn.addEventListener('click', () => { state.selectedDirection = btn.dataset.direction; toast(`Direção: ${state.selectedDirection}`); });
       });
     }
 
     async function loadWallets() {
       const data = await fetchJson('/token/wallets', { method: 'GET' });
-      state.wallets = data;
-      state.typeToWallet = {};
-      const types = [];
-      data.forEach(w => { types.includes(w.type) || types.push(w.type); state.typeToWallet[w.type] = w; });
-
+      state.wallets = data; state.typeToWallet = {}; const types = [];
+      data.forEach(w => { if (!types.includes(w.type)) types.push(w.type); state.typeToWallet[w.type] = w; });
       els.walletSelect.innerHTML = '';
-      types.forEach(type => {
-        const opt = document.createElement('option');
-        opt.value = type; opt.textContent = type; els.walletSelect.appendChild(opt);
-      });
+      types.forEach(type => { const opt = document.createElement('option'); opt.value = type; opt.textContent = type; els.walletSelect.appendChild(opt); });
+      state.selectedType = types[0] || 'REAL'; els.walletSelect.value = state.selectedType; updateBalanceUI();
+      els.walletSelect.addEventListener('change', () => { state.selectedType = els.walletSelect.value; updateBalanceUI(); toast(`Carteira: ${state.selectedType}`); });
+    }
 
-      state.selectedType = types[0] || 'REAL';
-      els.walletSelect.value = state.selectedType;
-      updateBalanceUI();
-
-      els.walletSelect.addEventListener('change', () => {
-        state.selectedType = els.walletSelect.value;
-        updateBalanceUI();
-        toast(`Carteira: ${state.selectedType}`);
-      });
+    function setHistoryLoading(isLoading) {
+      if (isLoading) {
+        els.historyBody.innerHTML = '';
+        for (let i = 0; i < 5; i++) {
+          const tr = document.createElement('tr');
+          for (let c = 0; c < 5; c++) { const td = document.createElement('td'); td.className = 'skeleton'; td.style.height = '18px'; tr.appendChild(td); }
+          els.historyBody.appendChild(tr);
+        }
+      }
     }
 
     async function loadHistory() {
       try {
+        els.refreshHistory.disabled = true; els.refreshHistory.textContent = 'Atualizando...';
+        setHistoryLoading(true);
         const trades = await fetchJson('/token/trades', { method: 'GET' });
         renderHistory(trades);
       } catch (e) {
-        renderHistory([]);
-        toast('Erro ao carregar histórico');
+        renderHistory([]); toast('Erro ao carregar histórico');
+      } finally {
+        els.refreshHistory.disabled = false; els.refreshHistory.textContent = 'Atualizar';
       }
     }
 
@@ -332,78 +318,40 @@
       els.historyBody.innerHTML = '';
       if (!trades || trades.length === 0) {
         const tr = document.createElement('tr');
-        const td = document.createElement('td');
-        td.colSpan = 5; td.style.color = '#a1a1aa';
-        td.textContent = 'Sem registros';
+        const td = document.createElement('td'); td.colSpan = 5; td.style.color = '#a1a1aa'; td.textContent = 'Sem registros';
         tr.appendChild(td); els.historyBody.appendChild(tr); return;
       }
       for (const t of trades) {
         const tr = document.createElement('tr');
-        const sym = document.createElement('td');
-        sym.innerHTML = '<span class="btc-icon" style="display:inline-flex;width:18px;height:18px;margin-right:6px;">₿</span>' + (t.symbol || 'BTCUSDT');
-        const dir = document.createElement('td');
-        dir.textContent = t.direction || '';
-        const amt = document.createElement('td');
-        amt.textContent = CURRENCY.format(Number(t.amount || 0));
-        const status = document.createElement('td');
-        const s = (t.status || '').toLowerCase();
-        status.className = 'status ' + s;
-        status.textContent = t.status || '';
-        const dt = document.createElement('td');
-        const d = t.createdAt ? new Date(t.createdAt) : null;
-        dt.textContent = d ? d.toLocaleString('pt-BR') : '';
-        tr.append(sym, dir, amt, status, dt);
-        els.historyBody.appendChild(tr);
+        const sym = document.createElement('td'); sym.innerHTML = '<span class="btc-icon" style="display:inline-flex;width:18px;height:18px;margin-right:6px;">₿</span>' + (t.symbol || 'BTCUSDT');
+        const dir = document.createElement('td'); dir.textContent = t.direction || '';
+        const amt = document.createElement('td'); amt.textContent = CURRENCY.format(Number(t.amount || 0));
+        const status = document.createElement('td'); const s = (t.status || '').toLowerCase(); status.className = 'status ' + s; status.textContent = t.status || '';
+        const dt = document.createElement('td'); const d = t.createdAt ? new Date(t.createdAt) : null; dt.textContent = d ? d.toLocaleString('pt-BR') : '';
+        tr.append(sym, dir, amt, status, dt); els.historyBody.appendChild(tr);
       }
     }
 
     async function openOrder() {
       els.tradeError.textContent = '';
       const amount = Number(els.amount.value);
-      if (!amount || amount <= 0) {
-        els.tradeError.textContent = 'Informe um valor válido.';
-        return;
-      }
+      if (!amount || amount <= 0) { els.tradeError.textContent = 'Informe um valor válido.'; return; }
       const isDemo = (state.selectedType || '').toUpperCase() === 'DEMO';
-      const body = {
-        isDemo,
-        closeType: state.selectedTime,
-        direction: state.selectedDirection,
-        symbol: 'BTCUSDT',
-        amount: amount
-      };
+      const body = { isDemo, closeType: state.selectedTime, direction: state.selectedDirection, symbol: 'BTCUSDT', amount };
       try {
-        const res = await fetch(`${API_BASE}/token/trades/open`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-          body: JSON.stringify(body)
-        });
-        if (!res.ok) throw new Error(await res.text().catch(() => 'Erro ao abrir ordem'));
-        const data = await res.json();
-        toast(`Ordem criada: ${data.id || 'OK'}`);
-        // Atualiza saldo após ordem
-        await loadWallets();
-        // Atualiza histórico
-        await loadHistory();
-      } catch (e) {
-        els.tradeError.textContent = e.message || 'Erro ao abrir ordem.';
-      }
+        const res = await fetch(`${API_BASE}/token/trades/open`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, body: JSON.stringify(body) });
+        if (!res.ok) throw new Error((await res.text().catch(()=>'')) || 'Erro ao abrir ordem');
+        const data = await res.json(); toast(`Ordem criada: ${data.id || 'OK'}`);
+        await loadWallets(); await loadHistory();
+      } catch (e) { els.tradeError.textContent = e.message || 'Erro ao abrir ordem.'; }
     }
 
     async function init() {
       state.token = sessionStorage.getItem('apiToken');
       if (!state.token) { window.location.href = 'index.html'; return; }
-      try {
-        await loadWallets();
-        await loadHistory();
-      } catch (e) {
-        toast('Falha ao inicializar. Faça login novamente.');
-        setTimeout(() => window.location.href = 'index.html', 1200);
-        return;
-      }
-      bindChips();
-      els.openOrder.addEventListener('click', openOrder);
-      els.refreshHistory.addEventListener('click', loadHistory);
+      try { await loadWallets(); await loadHistory(); }
+      catch { toast('Falha ao inicializar. Faça login novamente.'); setTimeout(() => window.location.href = 'index.html', 1200); return; }
+      bindChips(); els.openOrder.addEventListener('click', openOrder); els.refreshHistory.addEventListener('click', loadHistory);
     }
 
     init();
