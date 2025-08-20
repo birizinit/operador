@@ -1,87 +1,143 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
-<style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:'Montserrat', sans-serif; }
-body {
-    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-    color:#fff;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:100vh;
-}
-.container {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    padding:40px 30px;
-    width: 100%;
-    max-width: 500px;
-    text-align:center;
-    box-shadow:0 8px 30px rgba(0,0,0,0.5);
-}
-h2 { margin-bottom: 20px; }
-ul { list-style:none; padding:0; margin-top:20px; text-align:left; }
-ul li { margin-bottom:10px; font-weight:500; }
-.total { margin-top:20px; font-weight:bold; }
-.btn-logout {
-    margin-top:30px;
-    padding:10px 20px;
-    background:#fff;
-    color:#000;
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
-    font-weight:600;
-}
-.btn-logout:hover {
-    background:#ddd;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home</title>
+  <meta name="description" content="Visualize o saldo das suas carteiras e alterne entre contas.">
+  <meta name="theme-color" content="#000000">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Montserrat', sans-serif; }
+    body {
+      background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+      color:#fff;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      overflow-y:auto;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding:40px 30px;
+      width: 100%;
+      max-width: 520px;
+      text-align:center;
+      box-shadow:0 8px 30px rgba(0,0,0,0.5);
+    }
+    h2 { margin-bottom: 0; font-weight:600; }
+    .header { display:flex; align-items:center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+    .header .controls { display:flex; align-items:center; gap:8px; }
+    .select { padding:8px 10px; border-radius:8px; background:transparent; color:#fff; border:1px solid #444; }
+    .select:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+    .balance { font-weight:700; }
+    .error { margin: 8px 0 0 0; color:#ff6b6b; min-height:18px; font-size:14px; text-align:left; }
+    .btn-logout {
+      margin-top:30px;
+      padding:10px 20px;
+      background:#fff;
+      color:#000;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn-logout:hover { background:#ddd; }
+    .btn-logout:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+  </style>
 </head>
 <body>
-<div class="container">
-    <h2>Bem-vindo!</h2>
-    <ul id="wallets-list"></ul>
-    <p class="total" id="total-balance"></p>
+  <div class="container" id="container">
+    <div class="header">
+      <h2>Bem-vindo!</h2>
+      <div class="controls">
+        <select id="wallet-select" class="select" aria-label="Selecione a conta"></select>
+      </div>
+      <div class="balance" id="current-balance">R$ 0,00</div>
+    </div>
+    <div id="error" class="error" role="alert" aria-live="assertive"></div>
     <button class="btn-logout" onclick="logout()">Sair</button>
-</div>
+  </div>
 
-<script>
-// Carrega os dados do localStorage
-window.onload = function() {
-    const walletsData = JSON.parse(localStorage.getItem('walletsData'));
-    if (!walletsData) {
-        alert('Token não encontrado. Faça login novamente.');
+  <script>
+    const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    async function loadWallets() {
+      const container = document.getElementById('container');
+      const errorEl = document.getElementById('error');
+      const select = document.getElementById('wallet-select');
+      const balanceEl = document.getElementById('current-balance');
+
+      errorEl.textContent = '';
+      container.setAttribute('aria-busy', 'true');
+      select.disabled = true;
+      select.innerHTML = '<option>Carregando...</option>';
+
+      const token = sessionStorage.getItem('apiToken');
+      if (!token) {
         window.location.href = 'index.html';
         return;
+      }
+
+      try {
+        const response = await fetch('https://broker-api.mybroker.dev/token/wallets', {
+          method: 'GET',
+          headers: { 'api-token': token }
+        });
+
+        if (!response.ok) {
+          throw new Error('Sessão expirada ou token inválido. Faça login novamente.');
+        }
+
+        const data = await response.json();
+        // data: [{ id, tenantId, userId, type, balance, ... }]
+
+        const uniqueTypes = [];
+        const typeToWallet = {};
+        for (const wallet of data) {
+          if (!uniqueTypes.includes(wallet.type)) uniqueTypes.push(wallet.type);
+          typeToWallet[wallet.type] = wallet;
+        }
+
+        select.innerHTML = '';
+        uniqueTypes.forEach((type) => {
+          const option = document.createElement('option');
+          option.value = type;
+          option.textContent = type;
+          select.appendChild(option);
+        });
+
+        function updateBalance() {
+          const selectedType = select.value;
+          const wallet = typeToWallet[selectedType];
+          const amount = Number(wallet?.balance || 0);
+          balanceEl.textContent = currencyFormatter.format(amount);
+        }
+
+        select.addEventListener('change', updateBalance);
+        updateBalance();
+      } catch (err) {
+        errorEl.textContent = err.message || 'Erro ao carregar carteiras.';
+        setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+      } finally {
+        container.setAttribute('aria-busy', 'false');
+        select.disabled = false;
+      }
     }
 
-    const list = document.getElementById('wallets-list');
-    let total = 0;
+    window.onload = loadWallets;
 
-    walletsData.forEach(wallet => {
-        const li = document.createElement('li');
-        li.textContent = `${wallet.name}: ${wallet.balance}`;
-        list.appendChild(li);
-        total += Number(wallet.balance);
-    });
-
-    document.getElementById('total-balance').textContent = `Saldo total: ${total}`;
-}
-
-// Logout
-function logout() {
-    localStorage.removeItem('apiToken');
-    localStorage.removeItem('walletsData');
-    window.location.href = 'index.html';
-}
-</script>
+    function logout() {
+      sessionStorage.removeItem('apiToken');
+      window.location.href = 'index.html';
+    }
+  </script>
 </body>
 </html>
