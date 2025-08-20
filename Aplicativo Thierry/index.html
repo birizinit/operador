@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Login seguro com token para acessar suas carteiras." />
+  <meta name="theme-color" content="#000000" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://broker-api.mybroker.dev; img-src 'self' https://uploadsww.s3.us-east-1.amazonaws.com data:; font-src https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline';" />
   <title>Login com Token</title>
   <!-- Fonte Montserrat -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -20,7 +25,7 @@
       align-items: center;
       padding: 20px;
       color: #ffffff;
-      overflow: hidden;
+      overflow-y: auto;
     }
 
     .card {
@@ -104,6 +109,26 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
     }
+    .btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .input-box:focus-visible,
+    .btn:focus-visible,
+    .help-link:focus-visible {
+      outline: 2px solid #ffffff;
+      outline-offset: 2px;
+    }
+
+    .error {
+      margin-top: 12px;
+      color: #ff6b6b;
+      font-size: 14px;
+      min-height: 18px;
+    }
 
     .help-link {
       display: inline-block;
@@ -169,34 +194,53 @@
       <button type="submit" class="btn">Entrar</button>
     </form>
     <a href="#" class="help-link">Não sabe como encontrar seu token? Assista!</a>
+    <div id="error" class="error" role="alert" aria-live="assertive"></div>
   </div>
 
   <script>
+function setLoading(isLoading) {
+  const btn = document.querySelector('.btn');
+  const card = document.querySelector('.card');
+  btn.disabled = isLoading;
+  btn.textContent = isLoading ? 'Entrando...' : 'Entrar';
+  card.setAttribute('aria-busy', String(isLoading));
+}
+
+function showError(message) {
+  const errorEl = document.getElementById('error');
+  errorEl.textContent = message || '';
+}
+
 async function login(event) {
   event.preventDefault();
+  showError('');
   const token = document.getElementById('token').value.trim();
-  if (!token) return alert('Digite seu token!');
+  if (!token) {
+    showError('Digite seu token!');
+    return;
+  }
 
+  setLoading(true);
   try {
+    // Valida o token fazendo uma chamada simples
     const response = await fetch('https://broker-api.mybroker.dev/token/wallets', {
       method: 'GET',
       headers: {
-        'api-token': `${token}`,
-        'Content-Type': 'application/json'
+        'api-token': token
       }
     });
 
     if (!response.ok) throw new Error('Token inválido ou erro ao conectar com a API.');
 
-    const data = await response.json();
+    // Não armazenamos os dados das carteiras; apenas o token e vamos buscar na home
+    sessionStorage.setItem('apiToken', token);
 
-    localStorage.setItem('apiToken', token);
-    localStorage.setItem('walletsData', JSON.stringify(data));
-
-    window.location.href = 'home.html'; // Redireciona para a home
+    window.location.href = 'home.html';
   } catch (error) {
-    alert(error.message);
+    showError(error.message);
     console.error(error);
+  } finally {
+    setLoading(false);
   }
 }
   </script>

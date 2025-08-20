@@ -1,87 +1,490 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
-<style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:'Montserrat', sans-serif; }
-body {
-    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-    color:#fff;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:100vh;
-}
-.container {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    padding:40px 30px;
-    width: 100%;
-    max-width: 500px;
-    text-align:center;
-    box-shadow:0 8px 30px rgba(0,0,0,0.5);
-}
-h2 { margin-bottom: 20px; }
-ul { list-style:none; padding:0; margin-top:20px; text-align:left; }
-ul li { margin-bottom:10px; font-weight:500; }
-.total { margin-top:20px; font-weight:bold; }
-.btn-logout {
-    margin-top:30px;
-    padding:10px 20px;
-    background:#fff;
-    color:#000;
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
-    font-weight:600;
-}
-.btn-logout:hover {
-    background:#ddd;
-}
-</style>
-</head>
-<body>
-<div class="container">
-    <h2>Bem-vindo!</h2>
-    <ul id="wallets-list"></ul>
-    <p class="total" id="total-balance"></p>
-    <button class="btn-logout" onclick="logout()">Sair</button>
-</div>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>MVP Opções Binárias</title>
+  <meta name="description" content="MVP de opções binárias: selecione carteira, visualize saldo, abra ordens e veja o histórico.">
+  <meta name="theme-color" content="#000000">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-elev: #0f0f12;
+      --text: #ffffff;
+      --muted: #a1a1aa;
+      --purple: #7c3aed;
+      --purple-600: #6d28d9;
+      --border: #2a2a33;
+      --green: #10b981;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --radius: 14px;
+      --tap: 44px;
+    }
+    * { box-sizing:border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Montserrat', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    a { color: var(--text); text-decoration: none; }
+    a:hover { text-decoration: underline; }
 
-<script>
-// Carrega os dados do localStorage
-window.onload = function() {
-    const walletsData = JSON.parse(localStorage.getItem('walletsData'));
-    if (!walletsData) {
-        alert('Token não encontrado. Faça login novamente.');
-        window.location.href = 'index.html';
-        return;
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 64px;
+      background: rgba(15, 15, 18, 0.9);
+      border-bottom: 1px solid var(--purple);
+      display: flex; align-items: center;
+      padding: calc(env(safe-area-inset-top) + 6px) 16px 6px;
+      z-index: 1000;
+      backdrop-filter: blur(6px);
+    }
+    .header-inner {
+      width: 100%; max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 0.3px; }
+    .brand-mark {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--purple), #9b5cf0);
+      display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700;
+    }
+    .controls { display: flex; align-items: center; gap: 8px; }
+
+    .select, .btn, .balance, .user-chip {
+      min-height: var(--tap);
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(var(--bg-elev), var(--bg-elev)) padding-box,
+        linear-gradient(135deg, rgba(124,58,237,.6), rgba(155,92,240,.15)) border-box;
+      color: var(--text);
+      padding: 0 12px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .select { cursor: pointer; }
+    .select:focus-visible, .btn:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+    .btn { cursor: pointer; border-color: var(--purple); }
+    .btn.primary { background: var(--purple); border-color: var(--purple); }
+    .btn.primary:hover { background: var(--purple-600); }
+    .btn.ghost { background: transparent; border-color: var(--purple); }
+    .btn.ghost:hover { background: rgba(124, 58, 237, 0.12); }
+    .balance { font-weight: 700; white-space: nowrap; }
+
+    .user-chip { gap: 8px; padding-right: 10px; }
+    .avatar { width: 24px; height: 24px; border-radius: 999px; background: #1b1b21; display:flex; align-items:center; justify-content:center; font-weight:700; font-size: 12px; }
+    .user-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+
+    /* Main */
+    .main {
+      padding: calc(64px + env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 24px);
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr; gap: 16px;
     }
 
-    const list = document.getElementById('wallets-list');
-    let total = 0;
+    .panel {
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(var(--bg-elev), var(--bg-elev)) padding-box,
+        linear-gradient(135deg, rgba(124,58,237,.4), rgba(155,92,240,.12)) border-box;
+      padding: 16px;
+    }
+    .panel-title { font-weight: 700; margin-bottom: 10px; font-size: 16px; }
 
-    walletsData.forEach(wallet => {
-        const li = document.createElement('li');
-        li.textContent = `${wallet.name}: ${wallet.balance}`;
-        list.appendChild(li);
-        total += Number(wallet.balance);
-    });
+    /* Summary */
+    .summary-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .stat { display:flex; align-items:center; justify-content: space-between; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #111116; }
+    .stat .label { color: var(--muted); font-size: 12px; }
+    .stat .value { font-weight: 700; font-size: 18px; }
+    .pill { padding: 4px 8px; border-radius: 999px; border: 1px solid var(--border); font-size: 12px; }
+    .pill.win { color: var(--green); border-color: rgba(16,185,129,.5); }
+    .pill.loss { color: var(--red); border-color: rgba(239,68,68,.5); }
 
-    document.getElementById('total-balance').textContent = `Saldo total: ${total}`;
-}
+    /* Trade panel */
+    .pair { display:flex; align-items:center; gap:10px; margin-bottom: 12px; }
+    .btc-icon { width: 22px; height: 22px; border-radius: 50%; background: #f7931a; color:#000; font-weight: 700; display:flex; align-items:center; justify-content:center; }
+    .row { display:flex; flex-wrap: wrap; align-items:center; gap: 8px; margin-top: 8px; }
+    .chip { min-height: var(--tap); padding: 0 14px; border:1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text); font-weight:600; cursor:pointer; }
+    .chip:hover { border-color: var(--purple); }
+    .chip.active { background: rgba(124,58,237,0.12); border-color: var(--purple); }
+    .btn.buy { border-color: var(--green); color: var(--green); }
+    .btn.buy:hover { background: rgba(16,185,129,0.12); }
+    .btn.sell { border-color: var(--red); color: var(--red); }
+    .btn.sell:hover { background: rgba(239,68,68,0.12); }
 
-// Logout
-function logout() {
-    localStorage.removeItem('apiToken');
-    localStorage.removeItem('walletsData');
-    window.location.href = 'index.html';
-}
-</script>
+    .amount-wrap { display:flex; align-items:center; gap:8px; margin-top: 8px; flex-wrap: wrap; }
+    .amount-input { min-height: var(--tap); width: 140px; border-radius: 12px; border:1px solid var(--border); background: transparent; color: var(--text); padding: 0 12px; font-weight: 600; }
+
+    .order-actions { display:flex; gap: 10px; margin-top: 12px; }
+
+    /* History */
+    .history-header { display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px; }
+    .table-wrap { overflow-x:auto; border-radius: 10px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    th { color: var(--muted); font-weight: 600; }
+    .status { font-weight: 700; }
+    .status.open { color: var(--yellow); }
+    .status.win { color: var(--green); }
+    .status.loss { color: var(--red); }
+    .status.cancelled { color: var(--muted); }
+
+    /* Skeleton */
+    .skeleton { position: relative; overflow: hidden; background: #15151a; }
+    .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.06), rgba(255,255,255,0)); animation: shimmer 1.2s infinite; }
+    @keyframes shimmer { to { transform: translateX(100%); } }
+
+    /* Onboarding */
+    .onboarding { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; padding: 24px; z-index: 1200; }
+    .onboarding .box { max-width: 520px; width: 100%; border-radius: 16px; border: 1px solid var(--purple); background: var(--bg-elev); padding: 20px; }
+    .onboarding h3 { margin: 0 0 8px 0; font-size: 18px; }
+    .onboarding p { color: var(--muted); font-size: 14px; margin: 0 0 8px 0; }
+    .onboarding ul { margin: 8px 0 12px 16px; padding: 0; }
+    .onboarding li { margin-bottom: 6px; }
+
+    /* Toast */
+    .toast { position: fixed; right: 16px; bottom: 16px; background: var(--bg-elev); border: 1px solid var(--purple); color: var(--text); padding: 12px 14px; border-radius: 10px; opacity: 0; transform: translateY(8px); transition: all .2s ease; z-index: 1100; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* Desktop */
+    @media (min-width: 900px) {
+      .main { grid-template-columns: 1fr 1.4fr; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .user-name { max-width: 200px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-mark">B</div>
+        <div>Binary MVP</div>
+      </div>
+      <div class="controls">
+        <select id="wallet-select" class="select" aria-label="Selecione a carteira"></select>
+        <div id="balance" class="balance">R$ 0,00</div>
+        <a class="btn ghost" href="https://app.asafebroker.com/finance/deposit" target="_blank" rel="noopener noreferrer">Depósito</a>
+        <a class="btn ghost" href="https://app.asafebroker.com/finance/withdrawl" target="_blank" rel="noopener noreferrer">Saque</a>
+        <div id="user-chip" class="user-chip" aria-label="Usuário" title="Usuário">
+          <div class="avatar" id="user-avatar">U</div>
+          <div class="user-name" id="user-name">Usuário</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="panel" id="summary-panel">
+      <div class="panel-title">Resumo</div>
+      <div class="summary-grid">
+        <div class="stat" id="pl-today">
+          <div>
+            <div class="label">P/L Hoje</div>
+            <div class="value" id="pl-value">R$ 0,00</div>
+          </div>
+          <div class="pill" id="pl-pill">0 operações</div>
+        </div>
+        <div class="stat" id="last-trade">
+          <div>
+            <div class="label">Última ordem</div>
+            <div class="value" id="last-value">—</div>
+          </div>
+          <div class="pill" id="last-pill">—</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="trade-panel">
+      <div class="panel-title">Abrir ordem</div>
+      <div class="pair"><span class="btc-icon">₿</span> <strong>BTCUSDT</strong></div>
+      <div class="row" id="directions">
+        <button class="btn buy" data-direction="BUY">BUY</button>
+        <button class="btn sell" data-direction="SELL">SELL</button>
+      </div>
+      <div class="row" id="times">
+        <button class="chip" data-time="01:00">01:00</button>
+        <button class="chip" data-time="05:00">05:00</button>
+        <button class="chip" data-time="15:00">15:00</button>
+      </div>
+      <div class="amount-wrap">
+        <input id="amount" type="number" min="1" step="1" value="20" class="amount-input" aria-label="Valor da ordem">
+        <button class="chip" data-amount="10">R$ 10</button>
+        <button class="chip" data-amount="20">R$ 20</button>
+        <button class="chip" data-amount="50">R$ 50</button>
+      </div>
+      <div class="order-actions">
+        <button id="open-order" class="btn primary" style="flex:1;">Enviar ordem</button>
+      </div>
+      <div id="trade-error" style="margin-top:8px;color:#ff6b6b;min-height:18px;"></div>
+    </section>
+
+    <section class="panel" id="history-panel">
+      <div class="history-header">
+        <div class="panel-title">Histórico de trades</div>
+        <button id="refresh-history" class="btn">Atualizar</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Símbolo</th>
+              <th>Direção</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Data/Hora</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="5" style="color:var(--muted);">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div id="onboarding" class="onboarding" role="dialog" aria-modal="true" aria-labelledby="onb-title" aria-describedby="onb-desc">
+    <div class="box">
+      <h3 id="onb-title">Bem-vindo ao Binary MVP</h3>
+      <p id="onb-desc">Algumas dicas rápidas para começar:</p>
+      <ul>
+        <li>Selecione sua carteira (REAL, DEMO, BONUS) no topo para ver o saldo.</li>
+        <li>Escolha a direção (BUY/SELL), o tempo (01:00, 05:00, 15:00) e o valor.</li>
+        <li>Toque em “Enviar ordem”. Veja as ordens no histórico.</li>
+      </ul>
+      <button id="onb-close" class="btn primary" style="width:100%;">Começar</button>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://broker-api.mybroker.dev';
+    const CURRENCY = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const els = {
+      walletSelect: document.getElementById('wallet-select'),
+      balance: document.getElementById('balance'),
+      userChip: document.getElementById('user-chip'),
+      userName: document.getElementById('user-name'),
+      userAvatar: document.getElementById('user-avatar'),
+      openOrder: document.getElementById('open-order'),
+      amount: document.getElementById('amount'),
+      tradeError: document.getElementById('trade-error'),
+      historyBody: document.getElementById('history-body'),
+      refreshHistory: document.getElementById('refresh-history'),
+      toast: document.getElementById('toast'),
+      plValue: document.getElementById('pl-value'),
+      plPill: document.getElementById('pl-pill'),
+      lastValue: document.getElementById('last-value'),
+      lastPill: document.getElementById('last-pill'),
+      onboarding: document.getElementById('onboarding'),
+      onboardingClose: document.getElementById('onb-close'),
+    };
+
+    let state = {
+      token: null,
+      wallets: [],
+      typeToWallet: {},
+      selectedType: null,
+      selectedDirection: 'BUY',
+      selectedTime: '01:00',
+      user: null,
+    };
+
+    function toast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add('show');
+      setTimeout(() => els.toast.classList.remove('show'), 2000);
+    }
+
+    function getAuthHeaders() { return { 'api-token': state.token }; }
+
+    async function fetchJson(path, options = {}) {
+      const res = await fetch(`${API_BASE}${path}`, { ...options, headers: { ...getAuthHeaders(), ...(options.headers || {}) } });
+      if (!res.ok) { throw new Error((await res.text().catch(()=>'')).trim() || 'Erro na requisição'); }
+      return res.json();
+    }
+
+    function updateBalanceUI() {
+      const wallet = state.typeToWallet[state.selectedType];
+      const amount = Number(wallet?.balance || 0);
+      els.balance.textContent = CURRENCY.format(amount);
+    }
+
+    function initialsFrom(name = '') {
+      const parts = name.trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return 'U';
+      const first = parts[0][0] || '';
+      const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+      return (first + last).toUpperCase();
+    }
+
+    async function loadUser() {
+      try {
+        const me = await fetchJson('/token/users/me', { method: 'GET' });
+        state.user = me;
+        els.userName.textContent = me.name || me.email || 'Usuário';
+        els.userChip.title = me.email || me.name || 'Usuário';
+        els.userAvatar.textContent = initialsFrom(me.name || me.email || 'U');
+      } catch {
+        // opcional: manter valores padrão
+      }
+    }
+
+    function bindChips() {
+      document.querySelectorAll('#times .chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.selectedTime = btn.dataset.time;
+          document.querySelectorAll('#times .chip').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+      const firstTime = document.querySelector('#times .chip'); if (firstTime) firstTime.click();
+
+      document.querySelectorAll('.amount-wrap .chip').forEach(btn => {
+        btn.addEventListener('click', () => { els.amount.value = btn.dataset.amount; });
+      });
+
+      document.querySelectorAll('#directions .btn').forEach(btn => {
+        btn.addEventListener('click', () => { state.selectedDirection = btn.dataset.direction; toast(`Direção: ${state.selectedDirection}`); });
+      });
+    }
+
+    async function loadWallets() {
+      const data = await fetchJson('/token/wallets', { method: 'GET' });
+      state.wallets = data; state.typeToWallet = {}; const types = [];
+      data.forEach(w => { if (!types.includes(w.type)) types.push(w.type); state.typeToWallet[w.type] = w; });
+      els.walletSelect.innerHTML = '';
+      types.forEach(type => { const opt = document.createElement('option'); opt.value = type; opt.textContent = type; els.walletSelect.appendChild(opt); });
+      state.selectedType = types[0] || 'REAL'; els.walletSelect.value = state.selectedType; updateBalanceUI();
+      els.walletSelect.addEventListener('change', () => { state.selectedType = els.walletSelect.value; updateBalanceUI(); toast(`Carteira: ${state.selectedType}`); });
+    }
+
+    function setHistoryLoading(isLoading) {
+      if (isLoading) {
+        els.historyBody.innerHTML = '';
+        for (let i = 0; i < 5; i++) {
+          const tr = document.createElement('tr');
+          for (let c = 0; c < 5; c++) { const td = document.createElement('td'); td.className = 'skeleton'; td.style.height = '18px'; tr.appendChild(td); }
+          els.historyBody.appendChild(tr);
+        }
+      }
+    }
+
+    function isToday(date) {
+      const d = new Date(date);
+      const now = new Date();
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    }
+
+    function calculateDailyPL(trades) {
+      let pl = 0; let count = 0;
+      for (const t of trades) {
+        if (!t.createdAt || !isToday(t.createdAt)) continue;
+        if (t.status === 'WIN') { pl += Number(t.amount || 0); count++; }
+        else if (t.status === 'LOSS') { pl -= Number(t.amount || 0); count++; }
+      }
+      return { pl, count };
+    }
+
+    function updateSummary(trades) {
+      const { pl, count } = calculateDailyPL(trades || []);
+      els.plValue.textContent = CURRENCY.format(pl);
+      els.plPill.textContent = `${count} operação${count === 1 ? '' : 'es'}`;
+      els.plPill.classList.remove('win', 'loss');
+      if (pl > 0) els.plPill.classList.add('win'); else if (pl < 0) els.plPill.classList.add('loss');
+
+      if (trades && trades.length) {
+        const last = trades.slice().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+        els.lastValue.textContent = `${last.symbol || 'BTCUSDT'} • ${CURRENCY.format(Number(last.amount || 0))}`;
+        els.lastPill.textContent = `${last.status || ''}`;
+        els.lastPill.classList.remove('win', 'loss');
+        if ((last.status || '').toUpperCase() === 'WIN') els.lastPill.classList.add('win');
+        if ((last.status || '').toUpperCase() === 'LOSS') els.lastPill.classList.add('loss');
+      } else {
+        els.lastValue.textContent = '—';
+        els.lastPill.textContent = '—';
+        els.lastPill.classList.remove('win', 'loss');
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        els.refreshHistory.disabled = true; els.refreshHistory.textContent = 'Atualizando...';
+        setHistoryLoading(true);
+        const trades = await fetchJson('/token/trades', { method: 'GET' });
+        renderHistory(trades);
+        updateSummary(trades);
+      } catch (e) {
+        renderHistory([]); updateSummary([]); toast('Erro ao carregar histórico');
+      } finally {
+        els.refreshHistory.disabled = false; els.refreshHistory.textContent = 'Atualizar';
+      }
+    }
+
+    function renderHistory(trades) {
+      els.historyBody.innerHTML = '';
+      if (!trades || trades.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td'); td.colSpan = 5; td.style.color = '#a1a1aa'; td.textContent = 'Sem registros';
+        tr.appendChild(td); els.historyBody.appendChild(tr); return;
+      }
+      for (const t of trades) {
+        const tr = document.createElement('tr');
+        const sym = document.createElement('td'); sym.innerHTML = '<span class="btc-icon" style="display:inline-flex;width:18px;height:18px;margin-right:6px;">₿</span>' + (t.symbol || 'BTCUSDT');
+        const dir = document.createElement('td'); dir.textContent = t.direction || '';
+        const amt = document.createElement('td'); amt.textContent = CURRENCY.format(Number(t.amount || 0));
+        const status = document.createElement('td'); const s = (t.status || '').toLowerCase(); status.className = 'status ' + s; status.textContent = t.status || '';
+        const dt = document.createElement('td'); const d = t.createdAt ? new Date(t.createdAt) : null; dt.textContent = d ? d.toLocaleString('pt-BR') : '';
+        tr.append(sym, dir, amt, status, dt); els.historyBody.appendChild(tr);
+      }
+    }
+
+    async function openOrder() {
+      els.tradeError.textContent = '';
+      const amount = Number(els.amount.value);
+      if (!amount || amount <= 0) { els.tradeError.textContent = 'Informe um valor válido.'; return; }
+      const isDemo = (state.selectedType || '').toUpperCase() === 'DEMO';
+      const body = { isDemo, closeType: state.selectedTime, direction: state.selectedDirection, symbol: 'BTCUSDT', amount };
+      try {
+        const res = await fetch(`${API_BASE}/token/trades/open`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, body: JSON.stringify(body) });
+        if (!res.ok) throw new Error((await res.text().catch(()=>'')) || 'Erro ao abrir ordem');
+        const data = await res.json(); toast(`Ordem criada: ${data.id || 'OK'}`);
+        await loadWallets(); await loadHistory();
+      } catch (e) { els.tradeError.textContent = e.message || 'Erro ao abrir ordem.'; }
+    }
+
+    function initOnboarding() {
+      const dismissed = localStorage.getItem('onboardingDismissed') === 'true';
+      if (!dismissed) { els.onboarding.style.display = 'flex'; }
+      els.onboardingClose.addEventListener('click', () => { localStorage.setItem('onboardingDismissed', 'true'); els.onboarding.style.display = 'none'; });
+      els.onboarding.addEventListener('click', (e) => { if (e.target === els.onboarding) { localStorage.setItem('onboardingDismissed', 'true'); els.onboarding.style.display = 'none'; } });
+    }
+
+    async function init() {
+      state.token = sessionStorage.getItem('apiToken');
+      if (!state.token) { window.location.href = 'index.html'; return; }
+      try { await Promise.all([loadUser(), loadWallets(), loadHistory()]); }
+      catch { toast('Falha ao inicializar. Faça login novamente.'); setTimeout(() => window.location.href = 'index.html', 1200); return; }
+      bindChips(); els.openOrder.addEventListener('click', openOrder); els.refreshHistory.addEventListener('click', loadHistory); initOnboarding();
+    }
+
+    init();
+  </script>
 </body>
 </html>
